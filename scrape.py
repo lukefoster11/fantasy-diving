@@ -1,11 +1,63 @@
 import requests
 from bs4 import BeautifulSoup
 
+class Entry:
+    def __init__(self, diver, dives, event):
+        self.diver = diver
+        self.dives = dives
+        self.event = event
+
 class Event:
-    def __init__(self, title, entriesPath, date):
+    def __init__(self, title, entriesPath, date, meet):
         self.title = title
         self.entriesPath = entriesPath
         self.date = date
+        self.meet = meet
+
+    def getEntries(self):
+
+        entries = []
+
+        if self.entriesPath:
+            URL = "https://secure.meetcontrol.com/divemeets/system/" + self.entriesPath
+            page = requests.get(URL)
+            soup = BeautifulSoup(page.content, "html.parser")
+
+            # narrow to important content
+            content = soup.find(id="dm_content")
+            table = content.find("table").find("table")
+
+            # find divers
+            links = table.find_all("a")
+            divers = []
+            for link in links:
+                try:
+                    if link['href'].find("profile.php") != -1:
+                        divers.append(link.text)
+                except KeyError:
+                    pass
+            
+            # find dive lists
+            dives = []
+            rows = table.find_all("tr")
+            startIdxs = []
+            endIdxs = []
+            for idx,row in enumerate(rows):
+                if row.text.find("Order") != -1:
+                    startIdxs.append(idx)
+                elif row.text.find("DD Total:") != -1:
+                    endIdxs.append(idx)
+            nDives = endIdxs[0] - startIdxs[0] - 1
+            for i in range(len(divers)):
+                dList = []
+                for j in range(nDives):
+                    dList.append(rows[startIdxs[i]+1:endIdxs[i]][j].find_all("td")[1].text.strip())
+                dives.append(dList)
+
+            for i in range(len(divers)):
+                entries.append(Entry(divers[i], dives[i], self))
+
+        return entries
 
 class Meet:
     def __init__(self, title, path, date, hasResults):
@@ -22,26 +74,29 @@ class Meet:
         # narrow to important content
         content = soup.find(id="dm_content")
         table = content.find("table").find("table")
-        trs = table.find_all("tr")
+        rows = table.find_all("tr")
 
         # cut all `Divers Entered` content
-        for idx, tr in enumerate(trs):
-            if tr.text == "Divers Entered:":
-                trs = trs[:idx]
+        for idx, row in enumerate(rows):
+            if row.text == "Divers Entered:":
+                rows = rows[:idx]
                 break
         
         # loop through events, saving event info to `events`
         events = []
-        for tr in trs:
+        for row in rows:
             # check if line is new date and save info
-            if tr.text.find(", 202") != -1:
-                date = tr.text.strip()
+            if row.text.find(", 202") != -1:
+                date = row.text.strip()
             # check if new line is event with entries and save info
-            if tr.text.find("Entries") != -1:
-                entriesPath = tr.find_all("a")[-1]['href']
-                title = tr.text
+            if row.text.find("Rule") != -1:
+                if row.text.find("Entries") != -1:
+                    entriesPath = row.find_all("a")[-1]['href']
+                else:
+                    entriesPath = None
+                title = row.text
                 title = title[:title.find("Rule")].strip()
-                events.append(Event(title, entriesPath, date))
+                events.append(Event(title, entriesPath, date, self))
 
         return events
 
@@ -57,32 +112,34 @@ def main():
     # find info about current and upcoming meets
     divs = content.find_all("div")
     meets = divs[2]
-    trs = meets.find_all("tr", {"bgcolor":["e9e9e9", "9999ff"]})
+    rows = meets.find_all("tr", {"bgcolor":["e9e9e9", "9999ff"]})
 
     # loop through meets, saving meet info to `meets`
     meets = []
-    for tr in trs:
-        links = tr.find_all("a")
+    for row in rows:
+        links = row.find_all("a")
         if links[-1].text == "Results":
             hasResults = True
             title = links[-2]
         else:
             hasResults = False
             title = links[-1]
-        date = tr.find("td", align="right")
+        date = row.find("td", align="right")
 
         meets.append(Meet(title.text, title['href'], date.text, hasResults))
 
-    for meet in meets[:5]:
-        print(meet.title)
-        print(meet.date)
-        print("-------------------")
-        for event in meet.getEvents():
-            print(event.title)
-            print(event.entriesPath)
-            print(event.date, end="\n\n")
-        print("\n")
-
+    # TESTING DATA COLLECTION
+    No = 0
+    print(meets[No].title)
+    print("-"*30)
+    for event in meets[No].getEvents():
+        print(event.title)
+        print(event.date)
+        entries = event.getEntries()
+        for entry in entries:
+            print(entry.diver)
+            print(entry.dives, end="\n\n")
+        print("")
 
 if __name__ == "__main__":
     main()
