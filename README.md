@@ -1,1 +1,1 @@
-# fantasy-diving
+# fantasydiving
