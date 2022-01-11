@@ -13,9 +13,9 @@ class Event:
         self.entriesPath = entriesPath
         self.date = date
         self.meet = meet
+        self.entries = None
 
-    def getEntries(self):
-
+    def updateEntries(self):
         entries = []
 
         if self.entriesPath:
@@ -57,7 +57,8 @@ class Event:
             for i in range(len(divers)):
                 entries.append(Entry(divers[i], dives[i], self))
 
-        return entries
+        self.entries = entries
+        return
 
 class Meet:
     def __init__(self, title, path, date, hasResults):
@@ -65,8 +66,9 @@ class Meet:
         self.path = path
         self.date = date
         self.hasResults = hasResults
+        self.events = None
     
-    def getEvents(self):
+    def updateEvents(self):
         URL = "https://secure.meetcontrol.com/divemeets/system/" + self.path
         page = requests.get(URL)
         soup = BeautifulSoup(page.content, "html.parser")
@@ -98,10 +100,11 @@ class Meet:
                 title = title[:title.find("Rule")].strip()
                 events.append(Event(title, entriesPath, date, self))
 
-        return events
+        self.events = events
+        return
 
 
-def main():
+def getMeets():
     URL = "https://secure.meetcontrol.com/divemeets/system/index.php"
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
@@ -128,18 +131,26 @@ def main():
 
         meets.append(Meet(title.text, title['href'], date.text, hasResults))
 
-    # TESTING DATA COLLECTION
-    No = 0
-    print(meets[No].title)
-    print("-"*30)
-    for event in meets[No].getEvents():
+    return meets
+
+def main():
+    """
+    meets = getMeets()
+    meet = meets[0]
+    meet.updateEvents()
+    for event in meet.events:
+        event.updateEntries()
+    print(meet.title)
+    print(meet.date)
+    print("-"*50)
+    for event in meet.events: 
         print(event.title)
-        print(event.date)
-        entries = event.getEntries()
-        for entry in entries:
+        for entry in event.entries:
             print(entry.diver)
-            print(entry.dives, end="\n\n")
+            print(entry.dives)
         print("")
+    """
+
 
 if __name__ == "__main__":
     main()
