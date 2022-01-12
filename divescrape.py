@@ -15,7 +15,7 @@ class Event:
         self.meet = meet
         self.entries = None
 
-    def updateEntries(self):
+    def getEntries(self):
         entries = []
 
         if self.entriesPath:
@@ -68,7 +68,7 @@ class Meet:
         self.hasResults = hasResults
         self.events = None
     
-    def updateEvents(self):
+    def getEvents(self):
         URL = "https://secure.meetcontrol.com/divemeets/system/" + self.path
         page = requests.get(URL)
         soup = BeautifulSoup(page.content, "html.parser")
@@ -137,15 +137,12 @@ def main():
     """
     meets = getMeets()
     meet = meets[0]
-    meet.updateEvents()
-    for event in meet.events:
-        event.updateEntries()
     print(meet.title)
     print(meet.date)
     print("-"*50)
-    for event in meet.events: 
+    for event in meet.getEvents():
         print(event.title)
-        for entry in event.entries:
+        for entry in event.getEntries():
             print(entry.diver)
             print(entry.dives)
         print("")
