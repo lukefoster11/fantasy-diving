@@ -13,7 +13,6 @@ class Event:
         self.entriesPath = entriesPath
         self.date = date
         self.meet = meet
-        self.entries = None
 
     def getEntries(self):
         entries = []
@@ -66,7 +65,6 @@ class Meet:
         self.path = path
         self.date = date
         self.hasResults = hasResults
-        self.events = None
     
     def getEvents(self):
         URL = "https://secure.meetcontrol.com/divemeets/system/" + self.path
