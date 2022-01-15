@@ -1,0 +1,7 @@
+<h2>{{ event.meet.title }}</h2>
+<h3>{{ event.title }}</h3>
+<ul>
+    {% for entry in event.entry_set.all %}
+        <li>{{ entry.diver }}: {{ entry.dives }}</li>
+    {% endfor %}
+</ul>

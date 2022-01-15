@@ -1,4 +1,5 @@
 import requests
+import datetime
 from bs4 import BeautifulSoup
 
 class Entry:
@@ -17,7 +18,7 @@ class Event:
     def getEntries(self):
         entries = []
 
-        if self.entriesPath:
+        if self.entriesPath != "None":
             URL = "https://secure.meetcontrol.com/divemeets/system/" + self.entriesPath
             page = requests.get(URL)
             soup = BeautifulSoup(page.content, "html.parser")
@@ -56,14 +57,15 @@ class Event:
             for i in range(len(divers)):
                 entries.append(Entry(divers[i], dives[i], self))
 
-        self.entries = entries
-        return
+        return entries
 
 class Meet:
-    def __init__(self, title, path, date, hasResults):
+    def __init__(self, id, title, path, startDate, endDate, hasResults):
+        self.id = id
         self.title = title
         self.path = path
-        self.date = date
+        self.startDate = startDate
+        self.endDate = endDate
         self.hasResults = hasResults
     
     def getEvents(self):
@@ -84,22 +86,25 @@ class Meet:
         
         # loop through events, saving event info to `events`
         events = []
+        date = self.startDate
         for row in rows:
             # check if line is new date and save info
             if row.text.find(", 202") != -1:
                 date = row.text.strip()
+                date = date.replace(",", "").split()
+                date = datetime.date(int(date[-1]), datetime.datetime.strptime(date[1], "%b").month, int(date[2]))
+
             # check if new line is event with entries and save info
             if row.text.find("Rule") != -1:
                 if row.text.find("Entries") != -1:
                     entriesPath = row.find_all("a")[-1]['href']
                 else:
-                    entriesPath = None
+                    entriesPath = "None"
                 title = row.text
                 title = title[:title.find("Rule")].strip()
                 events.append(Event(title, entriesPath, date, self))
 
-        self.events = events
-        return
+        return events
 
 
 def getMeets():
@@ -126,8 +131,15 @@ def getMeets():
             hasResults = False
             title = links[-1]
         date = row.find("td", align="right")
+        date = date.text
+        date = date.replace(",", "").split()
 
-        meets.append(Meet(title.text, title['href'], date.text, hasResults))
+        startDate = datetime.date(int(date[-1]), datetime.datetime.strptime(date[0], "%b").month, int(date[1]))
+        endDate = datetime.date(int(date[-1]), datetime.datetime.strptime(date[3], "%b").month, int(date[4]))
+
+        id = title['href'][-4:]
+
+        meets.append(Meet(id, title.text, title['href'], startDate, endDate, hasResults))
 
     return meets
 
