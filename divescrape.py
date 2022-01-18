@@ -60,16 +60,15 @@ class Event:
         return entries
 
 class Meet:
-    def __init__(self, id, title, path, startDate, endDate, hasResults):
+    def __init__(self, id, title, startDate, endDate, hasResults):
         self.id = id
         self.title = title
-        self.path = path
         self.startDate = startDate
         self.endDate = endDate
         self.hasResults = hasResults
     
     def getEvents(self):
-        URL = "https://secure.meetcontrol.com/divemeets/system/" + self.path
+        URL = "https://secure.meetcontrol.com/divemeets/system/meetinfoext.php?meetnum=" + str(self.id)
         page = requests.get(URL)
         soup = BeautifulSoup(page.content, "html.parser")
 
@@ -137,9 +136,9 @@ def getMeets():
         startDate = datetime.date(int(date[-1]), datetime.datetime.strptime(date[0], "%b").month, int(date[1]))
         endDate = datetime.date(int(date[-1]), datetime.datetime.strptime(date[3], "%b").month, int(date[4]))
 
-        id = title['href'][-4:]
+        id = int(title['href'][-4:])
 
-        meets.append(Meet(id, title.text, title['href'], startDate, endDate, hasResults))
+        meets.append(Meet(id, title.text, startDate, endDate, hasResults))
 
     return meets
 

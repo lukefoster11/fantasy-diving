@@ -18,6 +18,7 @@ class Event(models.Model):
     meet = models.ForeignKey(Meet, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     date = models.DateField('Event Date', default=date.today)
+    entriesPath = models.CharField(max_length=100)
 
     def __str__(self):
         return self.meet.title + ": " + self.title

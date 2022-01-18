@@ -1,6 +1,0 @@
-<h2>{{ meet.title }}</h2>
-<ul>
-    {% for event in meet.event_set.all %}
-    <li><a href="/core/{{ meet.id }}/{{ event.id }}">{{ event.title }}</a> -- {{ event.date }}</li>
-    {% endfor %}
-</ul>
