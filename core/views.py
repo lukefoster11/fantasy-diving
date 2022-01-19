@@ -1,9 +1,9 @@
 from django.shortcuts import get_object_or_404, render, get_list_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import date
-from .models import Meet, Event, Entry, Dive
+from .models import FantasyEntry, Meet, Event, Entry, Dive, DiveInstance
 import divescrape
 
 
@@ -48,7 +48,6 @@ def events(request, meet_id):
     return render(request, 'core/events.html', {'meet': meet})
 
 # TODO: fix for hasResults=True events
-# TODO: rework with new entries model
 def entries(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     meet = event.meet
@@ -66,14 +65,27 @@ def entries(request, event_id):
             # assign dive many-to-many relationship
             for dive in entry.dives:
                 dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
-                print(dbdive.number)
-                dbentry.dives.add(dbdive)
+                DiveInstance(entry=dbentry, dive=dbdive).save()
 
             print(f"{entry.diver}'s entry added successfully")
         else:
-            # TODO: update existing events
+            # TODO: update existing entries
             print("entry already exists")
     
     # TODO: check for divers removed from event
     
     return render(request, 'core/entries.html', {'event': event})
+
+def createEntry(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+    selected_dives = request.POST.getlist('diveInstance')
+    # TODO: check if user already has FantasyEntry
+    # TODO: check if choices align with competition rules (6 dives, etc.)
+    fantasyEntry = FantasyEntry(event=event)
+    fantasyEntry.save()
+    for dive in selected_dives:
+        diveInstance = DiveInstance.objects.get(pk=dive)
+        fantasyEntry.dives.add(diveInstance)
+
+    # TODO: HttpResponseRedirect?
+    return render(request, 'core/submitted.html', {'event': event})

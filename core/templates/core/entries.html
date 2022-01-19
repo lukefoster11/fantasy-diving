@@ -2,6 +2,20 @@
 <h3>{{ event.title }}</h3>
 <ul>
     {% for entry in event.entry_set.all %}
-        <li>{{ entry.diver }}: * NEED TO IMPLEMENT *</li>
+        <li>{{ entry.diver }}: {% for diveInstance in entry.diveinstance_set.all %} {{ diveInstance.dive.number }} {% endfor %}</li>
     {% endfor %}
 </ul>
+<form action="{% url 'core:createEntry' event.id %}" method="post">
+    {% csrf_token %}
+    <fieldset>
+        <legend><h1>Create Entry for {{ event.title }}</h1></legend>
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+        {% for entry in event.entry_set.all %}
+            {% for diveInstance in entry.diveinstance_set.all %}
+                <input type="checkbox" name="diveInstance" id="diveInstance{{ forloop.counter }}" value="{{ diveInstance.id }}">
+                <label for="diveInstance{{ forloop.counter }}">{{ entry.diver }}: {{ diveInstance.dive.number }}, {{ diveInstance.dive.height }}M</label><br>
+            {% endfor %}
+        {% endfor %}
+    </fieldset>
+    <input type="submit" value="CreateEntry">
+</form>

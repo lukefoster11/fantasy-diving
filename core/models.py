@@ -36,7 +36,22 @@ class Event(models.Model):
 class Entry(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     diver = models.CharField(max_length=50)
-    dives = models.ManyToManyField(Dive)
     
     def __str__(self):
         return self.event.meet.title + ": " + self.event.title + ": " + self.diver
+
+class DiveInstance(models.Model):
+    entry = models.ForeignKey(Entry, on_delete=models.CASCADE)
+    dive = models.ForeignKey(Dive, on_delete=models.CASCADE)
+    # TODO: add scores
+
+    def __str__(self):
+        return self.entry.event.meet.title + ": " + self.entry.event.title + ": " + self.entry.diver + ": " + self.dive.number
+
+class FantasyEntry(models.Model):
+    # TODO: add user
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    dives = models.ManyToManyField(DiveInstance)
+
+    def __str__(self):
+        return "Fantasy Entry: " + self.event.meet.title + ": " + self.event.title
