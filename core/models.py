@@ -1,9 +1,19 @@
+from platform import mac_ver
 from django.db import models
 from django.db.models.query_utils import PathInfo
 from django.contrib.postgres.fields import ArrayField
 from datetime import date
 
 # Create your models here.
+class Dive(models.Model):
+    number = models.CharField(max_length=6)
+    height = models.IntegerField()
+    description = models.CharField(max_length=100)
+    dd = models.FloatField()
+
+    def __str__(self):
+        return self.number + ", " + str(self.height) + "M"
+
 class Meet(models.Model):
     meetid = models.IntegerField(default=0, unique=True)
     title = models.CharField(max_length=200)
@@ -26,7 +36,7 @@ class Event(models.Model):
 class Entry(models.Model):
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     diver = models.CharField(max_length=50)
-    dives = ArrayField(models.CharField(max_length=5))
+    dives = models.ManyToManyField(Dive)
     
     def __str__(self):
         return self.event.meet.title + ": " + self.event.title + ": " + self.diver

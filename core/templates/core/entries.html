@@ -2,10 +2,6 @@
 <h3>{{ event.title }}</h3>
 <ul>
     {% for entry in event.entry_set.all %}
-        <li>{{ entry.diver }}: 
-            {% for dive in entry.dives %}
-                {{ dive }}
-            {% endfor %}
-        </li>
+        <li>{{ entry.diver }}: * NEED TO IMPLEMENT *</li>
     {% endfor %}
 </ul>

@@ -2,6 +2,13 @@ import requests
 import datetime
 from bs4 import BeautifulSoup
 
+class Dive:
+    def __init__(self, number, height, description=None, dd=None):
+        self.number = number
+        self.height = height
+        self.description = description
+        self.dd = dd
+
 class Entry:
     def __init__(self, diver, dives, event):
         self.diver = diver
@@ -49,10 +56,12 @@ class Event:
                     endIdxs.append(idx)
             nDives = endIdxs[0] - startIdxs[0] - 1
             for i in range(len(divers)):
-                dList = []
+                diveList = []
                 for j in range(nDives):
-                    dList.append(rows[startIdxs[i]+1:endIdxs[i]][j].find_all("td")[1].text.strip())
-                dives.append(dList)
+                    diveNumber = rows[startIdxs[i]+1:endIdxs[i]][j].find_all("td")[1].text.strip()
+                    diveHeight = rows[startIdxs[i]+1:endIdxs[i]][j].find_all("td")[2].text.strip()[:-1]
+                    diveList.append(Dive(diveNumber, diveHeight))
+                dives.append(diveList)
 
             for i in range(len(divers)):
                 entries.append(Entry(divers[i], dives[i], self))
@@ -142,21 +151,39 @@ def getMeets():
 
     return meets
 
+
+def getDives():
+    URL = "https://secure.meetcontrol.com/divemeets/system/divelist.php"
+    page = requests.get(URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+
+    # narrow contents to rows of info
+    rows = soup.find("table").find_all("tr")[4:-1]
+
+    dives = []
+    for row in rows:
+        tds = row.find_all("td")
+        number = tds[0].text
+        height = int(tds[1].text[:-1])
+        description = tds[2].text
+        dd = float(tds[3].text)
+        dives.append(Dive(number, height, description, dd))
+
+    return dives
+
 def main():
     """
-    meets = getMeets()
-    meet = meets[0]
-    print(meet.title)
-    print(meet.date)
-    print("-"*50)
-    for event in meet.getEvents():
-        print(event.title)
-        for entry in event.getEntries():
-            print(entry.diver)
-            print(entry.dives)
+    meet = getMeets()[2]
+    event = meet.getEvents()[0]
+    entries = event.getEntries()
+    for entry in entries:
+        print(entry.diver, end=": ")
+        for dive in entry.dives:
+            print(dive.number, end=" - ")
+            print(dive.height, end=", ")
         print("")
     """
-
+    return
 
 if __name__ == "__main__":
     main()

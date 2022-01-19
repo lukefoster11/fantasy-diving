@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404, render, get_list_or_404
 from django.http import HttpResponse
 from django.db.utils import IntegrityError
+from django.core.exceptions import ObjectDoesNotExist
 from datetime import date
-from .models import Meet, Event, Entry
+from .models import Meet, Event, Entry, Dive
 import divescrape
 
 
@@ -20,8 +21,8 @@ def overview(request):
     
     # TODO: remove cancelled meets
 
-    current_meets = Meet.objects.filter(startDate__lte=date.today()).filter(endDate__gte=date.today())
-    upcoming_meets = Meet.objects.filter(startDate__gt=date.today())
+    current_meets = Meet.objects.filter(startDate__lte=date.today()).filter(endDate__gte=date.today()).order_by('startDate')
+    upcoming_meets = Meet.objects.filter(startDate__gt=date.today()).order_by('startDate')
     context = {'current_meets': current_meets, 'upcoming_meets': upcoming_meets}
     return render(request, 'core/overview.html', context)
 
@@ -33,19 +34,21 @@ def events(request, meet_id):
 
     # Generate events for meet, and add/update them to db
     for event in dsevents:
-        exists = Event.objects.filter(meet=meet).filter(title=event.title)
-        if not exists:
+        try:
+            # fetch event from database
+            Event.objects.filter(meet=meet).get(title=event.title)
+            # TODO: update existing events
+            print("event already exists")
+        except ObjectDoesNotExist:
             Event(meet = meet, title = event.title, date = event.date, entriesPath = event.entriesPath).save()
             print(f"{event.title} added successfully")
-        else:
-            # TODO: update existing events
-            print("event already exists")    
 
     # TODO: check for events removed from meet      
 
     return render(request, 'core/events.html', {'meet': meet})
 
 # TODO: fix for hasResults=True events
+# TODO: rework with new entries model
 def entries(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     meet = event.meet
@@ -56,7 +59,16 @@ def entries(request, event_id):
     for entry in dsentries:
         exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
         if not exists:
-            Entry(event = event, diver = entry.diver, dives = entry.dives).save()
+            # create entry in database
+            dbentry = Entry(event = event, diver = entry.diver)
+            dbentry.save()
+
+            # assign dive many-to-many relationship
+            for dive in entry.dives:
+                dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
+                print(dbdive.number)
+                dbentry.dives.add(dbdive)
+
             print(f"{entry.diver}'s entry added successfully")
         else:
             # TODO: update existing events
