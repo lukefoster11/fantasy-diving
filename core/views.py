@@ -14,33 +14,41 @@ def overview(request):
     for meet in meets:
         try:
             Meet(meetid = meet.id, title = meet.title, startDate = meet.startDate, 
-                endDate = meet.endDate, hasResults = meet.hasResults).save()
+                endDate = meet.endDate).save()
             print(f"{meet.title} added successfully")
         except IntegrityError:
-            # TODO: update existing meets
-            print("meet already exists")
+            # Update existing meets
+            print(f"{meet.title} already exists, updating...")
+            dbmeet = Meet.objects.get(meetid=meet.id)
+            dbmeet.title = meet.title
+            dbmeet.startDate = meet.startDate
+            dbmeet.endDate = meet.endDate
+            dbmeet.save()
     
-    # TODO: remove cancelled meets
+    # TODO: Remove cancelled meets
 
-    current_meets = Meet.objects.filter(startDate__lte=date.today()).filter(endDate__gte=date.today()).order_by('startDate')
-    upcoming_meets = Meet.objects.filter(startDate__gt=date.today()).order_by('startDate')
+    current_meets = Meet.objects.filter(startDate__lte=date.today()).filter(endDate__gte=date.today()).order_by('startDate', 'title')
+    upcoming_meets = Meet.objects.filter(startDate__gt=date.today()).order_by('startDate', 'title')
     context = {'current_meets': current_meets, 'upcoming_meets': upcoming_meets}
     return render(request, 'core/overview.html', context)
 
 def events(request, meet_id):
     # Get meet info from db
     meet = get_object_or_404(Meet, pk=meet_id)
-    dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate, meet.hasResults)
+    dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate)
     dsevents = dsmeet.getEvents()
 
     # Generate events for meet, and add/update them to db
     for event in dsevents:
-        try:
-            # fetch event from database
-            Event.objects.filter(meet=meet).get(title=event.title)
-            # TODO: update existing events
-            print("event already exists")
-        except ObjectDoesNotExist:
+        # Fetch event from database
+        exists = Event.objects.filter(meet=meet).filter(title=event.title)
+        if exists:
+            # Update existing events
+            print(f"{exists[0].title} already exists, updating")
+            exists[0].date = event.date
+            exists[0].entriesPath = event.entriesPath
+            exists[0].save()
+        else:
             Event(meet = meet, title = event.title, date = event.date, entriesPath = event.entriesPath).save()
             print(f"{event.title} added successfully")
 
@@ -48,36 +56,78 @@ def events(request, meet_id):
 
     return render(request, 'core/events.html', {'meet': meet})
 
-# TODO: fix for hasResults=True events
 def entries(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     meet = event.meet
-    dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate, meet.hasResults)
+    dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate)
     dsevent = divescrape.Event(event.title, event.entriesPath, event.date, dsmeet)
-    dsentries = dsevent.getEntries()
+    
+    if not event.hasResults:
+        dsentries = dsevent.getEntries()
+        event.hasResults = dsevent.hasResults
+        event.save()
 
-    for entry in dsentries:
-        exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
-        if not exists:
-            # create entry in database
-            dbentry = Entry(event = event, diver = entry.diver)
-            dbentry.save()
+    # TODO: look for unofficial results (if meet has started, stop allowing fantasy entries)
+    if not event.hasResults:
 
-            # assign dive many-to-many relationship
+        for entry in dsentries:
+            exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
+            if not exists:
+                # create entry in database
+                dbentry = Entry(event = event, diver = entry.diver)
+                dbentry.save()
+
+                # assign dive relationship
+                for dive in entry.dives:
+                    if dive.height == '7.5':
+                        dive.height = '7'
+                    dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
+                    DiveInstance(entry=dbentry, dive=dbdive).save()
+
+                print(f"{entry.diver}'s entry added successfully")
+            else:
+                # TODO: update existing entries
+                print("entry already exists")
+        
+        # TODO: check for divers removed from event
+        
+        return render(request, 'core/entries.html', {'event': event})
+    
+    else:
+        results = dsevent.getResults()
+        # TODO: update database with results
+        for entry in results:
+            exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
+            if not exists:
+                # create entry in database
+                dbentry = Entry(event=event, diver=entry.diver)
+                dbentry.save()
+            
+            else:
+                # TODO: update existing entries
+                print("entry already exists")
+
+            dbentry = Entry.objects.filter(event=event).get(diver=entry.diver)
+            dbdives = DiveInstance.objects.filter(entry=dbentry)
             for dive in entry.dives:
-                if dive.height == '7.5':
-                    dive.height = '7'
                 dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
-                DiveInstance(entry=dbentry, dive=dbdive).save()
+                exists = DiveInstance.objects.filter(entry=dbentry).filter(dive=dbdive)
+                if exists:
+                    exists[0].score = dive.score
+                    exists[0].save()
+                else:
+                    DiveInstance(entry=dbentry, dive=dbdive, score=dive.score).save()
+            
+            # Delete any extra DiveInstances if a dive was maybe changed
+            for dbdive in dbdives:
+                match = False
+                for dive in entry.dives:
+                    if dbdive.dive.number == dive.number and dbdive.dive.height == dive.height:
+                        match = True
+                if not match:
+                    dbdive.delete()
 
-            print(f"{entry.diver}'s entry added successfully")
-        else:
-            # TODO: update existing entries
-            print("entry already exists")
-    
-    # TODO: check for divers removed from event
-    
-    return render(request, 'core/entries.html', {'event': event})
+        return render(request, 'core/results.html', {'event': event})
 
 def createEntry(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
