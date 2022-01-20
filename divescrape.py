@@ -1,19 +1,75 @@
 import requests
 import datetime
+import re
 from bs4 import BeautifulSoup
 
 class Dive:
-    def __init__(self, number, height, description=None, dd=None):
+    def __init__(self, number, height, description=None, dd=None, score=None):
         self.number = number
         self.height = height
         self.description = description
         self.dd = dd
+        self.score = score
 
 class Entry:
     def __init__(self, diver, dives, event):
         self.diver = diver
         self.dives = dives
         self.event = event
+    
+    def updateScores(self):
+        URL = "https://secure.meetcontrol.com/divemeets/system/meetresultsext.php?meetnum=" + str(self.event.meet.id)
+        page = requests.get(URL)
+        soup = BeautifulSoup(page.content, "html.parser")
+        found = False
+
+        content = soup.find(id="dm_content").find("table").find_all("tr")
+        for row in content:
+            td = row.find("td")
+            link = td.find("a")
+            try:
+                if link.text == self.event.title:
+                    URL = "https://secure.meetcontrol.com/divemeets/system/" + link['href']
+                    found = True
+            except AttributeError:
+                pass
+        
+        if not found:
+            return
+
+        # continue if link to event results was found
+        page = requests.get(URL)
+        soup = BeautifulSoup(page.content, "html.parser")
+        found = False
+
+        content = soup.find(id="dm_content").find("table").find_all("tr")
+        for row in content:
+            if re.sub(' +', ' ',row.find("td").text.strip()) == self.diver:
+                link = row.find_all("td")[-2].find("a")
+                URL = "https://secure.meetcontrol.com/divemeets/system/" + link['href']
+                found = True
+
+        if not found:
+            return
+
+        # continue if link to entry results was found
+        page = requests.get(URL)
+        soup = BeautifulSoup(page.content, "html.parser")
+
+        content = soup.find(id="dm_content").find("table").find_all("tr")
+        for row in content:
+            try:
+                tds = row.find_all("td")
+
+                for dive in self.dives:
+                    # TODO: condition in which db dive.height = 7, but tds[2].text = 7.5M,, ROUND DOWN?
+                    if tds[1].text == dive.number and tds[2].text[:-1] == str(dive.height):
+                        dive.score = tds[-2].text
+
+            except IndexError:
+                pass
+
+        return
 
 class Event:
     def __init__(self, title, entriesPath, date, meet):
@@ -40,7 +96,9 @@ class Event:
             for link in links:
                 try:
                     if link['href'].find("profile.php") != -1:
-                        divers.append(link.text)
+                        name = link.text.split(",")
+                        name = name[1].strip() + " " + name[0].strip()
+                        divers.append(name)
                 except KeyError:
                     pass
             
@@ -173,16 +231,22 @@ def getDives():
 
 def main():
     """
-    meet = getMeets()[2]
+    meet = Meet(7715, "RUTG vs VUW", datetime.date(2022,1,17), datetime.date(2022,1,17), True)
+    event = Event("Women 1m Championship (6 Dives)", "testentriespath", datetime.date(2022,1,17), meet)
+    dives = [Dive("203B", 1), Dive("105B", 1), Dive("303B", 1), Dive("403B", 1), Dive("5132D", 1), Dive("5134D", 1)]
+    entry = Entry("Abigail Knapton", dives, event)
+
+    if entry.event.meet.hasResults:
+        entry.updateScores()
+    
+    for dive in entry.dives:
+        print(f"{dive.number}: {dive.score}")
+    """
+    meet = getMeets()[0]
     event = meet.getEvents()[0]
     entries = event.getEntries()
     for entry in entries:
-        print(entry.diver, end=": ")
-        for dive in entry.dives:
-            print(dive.number, end=" - ")
-            print(dive.height, end=", ")
-        print("")
-    """
+        print(entry.diver)
     return
 
 if __name__ == "__main__":

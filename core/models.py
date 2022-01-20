@@ -43,7 +43,7 @@ class Entry(models.Model):
 class DiveInstance(models.Model):
     entry = models.ForeignKey(Entry, on_delete=models.CASCADE)
     dive = models.ForeignKey(Dive, on_delete=models.CASCADE)
-    # TODO: add scores
+    score = models.FloatField(null=True)
 
     def __str__(self):
         return self.entry.event.meet.title + ": " + self.entry.event.title + ": " + self.entry.diver + ": " + self.dive.number

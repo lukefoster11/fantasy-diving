@@ -1,7 +1,8 @@
-from django.shortcuts import get_object_or_404, render, get_list_or_404
+from django.shortcuts import get_object_or_404, render, get_list_or_404, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.utils import IntegrityError
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib import messages
 from datetime import date
 from .models import FantasyEntry, Meet, Event, Entry, Dive, DiveInstance
 import divescrape
@@ -64,6 +65,8 @@ def entries(request, event_id):
 
             # assign dive many-to-many relationship
             for dive in entry.dives:
+                if dive.height == '7.5':
+                    dive.height = '7'
                 dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
                 DiveInstance(entry=dbentry, dive=dbdive).save()
 
@@ -88,4 +91,4 @@ def createEntry(request, event_id):
         fantasyEntry.dives.add(diveInstance)
 
     # TODO: HttpResponseRedirect?
-    return render(request, 'core/submitted.html', {'event': event})
+    return redirect('core:overview')
