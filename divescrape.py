@@ -1,3 +1,4 @@
+from tkinter.ttk import Separator
 import requests
 import datetime
 import re
@@ -27,9 +28,14 @@ class Entry:
         content = soup.find(id="dm_content").find("table").find_all("tr", bgcolor="dddddd")
         for row in content:
             tds = row.find_all("td")
-            number = tds[1].text
-            # TODO: perhaps need to fix later? We'll see
-            height = math.floor(float(tds[2].text[:-1]))
+            if tds[1].find("br"):
+                number = tds[1].get_text(strip=True, separator='\n').splitlines()[1]
+                height = tds[2].get_text(strip=True, separator='\n').splitlines()[1][:-1]
+                height = math.floor(float(height))         
+            else:
+                number = tds[1].text
+                # TODO: perhaps need to fix later? We'll see
+                height = math.floor(float(tds[2].text[:-1]))
             score = float(tds[-2].text)
             dives.append(Dive(number, height, score=score))
         
@@ -242,8 +248,8 @@ def main():
 
     
     
-    meet = getMeets()[0]
-    event = meet.getEvents()[0]
+    meet = getMeets()[3]
+    event = meet.getEvents()[4]
     results = event.getResults()
     for result in results:
         print(result.diver)
