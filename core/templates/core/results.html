@@ -2,6 +2,22 @@
 <h3>{{ event.title }} Results</h3>
 <ul>
     {% for entry in event.entry_set.all %}
-        <li>{{ entry.diver }}: {% for diveInstance in entry.diveinstance_set.all %} {{ diveInstance.dive.number }}: {{ diveInstance.score }} {% endfor %}</li>
+        <li>{{ entry.diver }}: 
+            {% for diveInstance in entry.diveinstance_set.all %} 
+                {{ diveInstance.dive.number }}: {{ diveInstance.score|floatformat:2 }} 
+            {% endfor %}
+            <strong>Total: {{ entry.totalScore|floatformat:2 }}</strong>
+        </li>
+    {% endfor %}
+</ul>
+<h3>Fantasy Entries</h3>
+<ul>
+    {% for fantasyEntry in event.fantasyentry_set.all %}
+        <li>
+            {% for dive in fantasyEntry.dives.all %}
+                {{ dive.entry.diver }}: {{ dive.dive.number }}: {{ dive.score|floatformat:2 }}
+            {% endfor %}
+            <strong>Total: {{ fantasyEntry.totalScore|floatformat:2 }}</strong>
+        </li>
     {% endfor %}
 </ul>

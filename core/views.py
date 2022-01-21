@@ -61,73 +61,90 @@ def entries(request, event_id):
     meet = event.meet
     dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate)
     dsevent = divescrape.Event(event.title, event.entriesPath, event.date, dsmeet)
+
+    update_results = False
     
     if not event.hasResults:
         dsentries = dsevent.getEntries()
-        event.hasResults = dsevent.hasResults
+        update_results = dsevent.hasResults
         event.save()
 
-    # TODO: look for unofficial results (if meet has started, stop allowing fantasy entries)
-    if not event.hasResults:
+        # TODO: look for unofficial results (if meet has started, stop allowing fantasy entries)
+        if not update_results:
 
-        for entry in dsentries:
-            exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
-            if not exists:
-                # create entry in database
-                dbentry = Entry(event = event, diver = entry.diver)
-                dbentry.save()
+            for entry in dsentries:
+                exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
+                if not exists:
+                    # create entry in database
+                    dbentry = Entry(event = event, diver = entry.diver)
+                    dbentry.save()
 
-                # assign dive relationship
-                for dive in entry.dives:
-                    if dive.height == '7.5':
-                        dive.height = '7'
-                    dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
-                    DiveInstance(entry=dbentry, dive=dbdive).save()
+                    # assign dive relationship
+                    for dive in entry.dives:
+                        if dive.height == '7.5':
+                            dive.height = '7'
+                        dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
+                        DiveInstance(entry=dbentry, dive=dbdive).save()
 
-                print(f"{entry.diver}'s entry added successfully")
-            else:
-                # TODO: update existing entries
-                print("entry already exists")
-        
-        # TODO: check for divers removed from event
-        
-        return render(request, 'core/entries.html', {'event': event})
-    
-    else:
-        results = dsevent.getResults()
-        # TODO: update database with results
-        for entry in results:
-            exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
-            if not exists:
-                # create entry in database
-                dbentry = Entry(event=event, diver=entry.diver)
-                dbentry.save()
-            
-            else:
-                # TODO: update existing entries
-                print("entry already exists")
-
-            dbentry = Entry.objects.filter(event=event).get(diver=entry.diver)
-            dbdives = DiveInstance.objects.filter(entry=dbentry)
-            for dive in entry.dives:
-                dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
-                exists = DiveInstance.objects.filter(entry=dbentry).filter(dive=dbdive)
-                if exists:
-                    exists[0].score = dive.score
-                    exists[0].save()
+                    print(f"{entry.diver}'s entry added successfully")
                 else:
-                    DiveInstance(entry=dbentry, dive=dbdive, score=dive.score).save()
+                    # TODO: update existing entries
+                    print("entry already exists")
             
-            # Delete any extra DiveInstances if a dive was maybe changed
-            for dbdive in dbdives:
-                match = False
-                for dive in entry.dives:
-                    if dbdive.dive.number == dive.number and dbdive.dive.height == dive.height:
-                        match = True
-                if not match:
-                    dbdive.delete()
+            # TODO: check for divers removed from event
+            
+            return render(request, 'core/entries.html', {'event': event})
+    
+        else:
+            results = dsevent.getResults()
+            for entry in results:
+                exists = Entry.objects.filter(event=event).filter(diver=entry.diver)
+                if not exists:
+                    # create entry in database
+                    dbentry = Entry(event=event, diver=entry.diver)
+                    dbentry.save()
+                
+                else:
+                    # TODO: update existing entries
+                    print("entry already exists")
 
-        return render(request, 'core/results.html', {'event': event})
+                dbentry = Entry.objects.filter(event=event).get(diver=entry.diver)
+                dbdives = DiveInstance.objects.filter(entry=dbentry)
+                for dive in entry.dives:
+                    dbdive = Dive.objects.filter(number=dive.number).get(height=dive.height)
+                    exists = DiveInstance.objects.filter(entry=dbentry).filter(dive=dbdive)
+                    if exists:
+                        exists[0].score = dive.score
+                        exists[0].save()
+                    else:
+                        DiveInstance(entry=dbentry, dive=dbdive, score=dive.score).save()
+
+                if dbentry.totalScore == 0:
+                    for dive in entry.dives:
+                        dbentry.totalScore += dive.score
+                dbentry.save()
+                
+                # Delete any extra DiveInstances if a dive was maybe changed
+                for dbdive in dbdives:
+                    match = False
+                    for dive in entry.dives:
+                        if dbdive.dive.number == dive.number and dbdive.dive.height == dive.height:
+                            match = True
+                    if not match:
+                        dbdive.delete()
+            
+            fantasyEntries = FantasyEntry.objects.filter(event=event)
+            for fantasyEntry in fantasyEntries:
+                if fantasyEntry.totalScore == 0:
+                    for dive in fantasyEntry.dives.all():
+                        fantasyEntry.totalScore += dive.score
+                fantasyEntry.save()
+            
+            event.hasResults = True
+            event.save()
+        
+    return render(request, 'core/results.html', {'event': event})
+
 
 def createEntry(request, event_id):
     event = get_object_or_404(Event, pk=event_id)

@@ -239,27 +239,15 @@ def getDives():
     return dives
 
 def main():
-    
-    meet = Meet(7715, "RUTG vs VUW", datetime.date(2022,1,17), datetime.date(2022,1,17), True)
-    event = Event("Women 1m Championship (6 Dives)", "testentriespath", datetime.date(2022,1,17), meet)
-
-    if event.hasResults:
-        results = event.getResults()
-    
-    for result in results:
-        print(result.diver)
-        for dive in result.dives:
-            print(f"{dive.number}: {dive.score}")
-        print("")
 
     
-    """
+    
     meet = getMeets()[0]
     event = meet.getEvents()[0]
-    entries = event.getEntries()
-    for entry in entries:
-        print(entry.diver)
-    """
+    results = event.getResults()
+    for result in results:
+        print(result.diver)
+    
     return
 
 if __name__ == "__main__":
