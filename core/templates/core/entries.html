@@ -1,21 +1,53 @@
-<h2>{{ event.meet.title }}</h2>
-<h3>{{ event.title }}</h3>
-<ul>
-    {% for entry in event.entry_set.all %}
-        <li>{{ entry.diver }}: {% for diveInstance in entry.diveinstance_set.all %} {{ diveInstance.dive.number }} {% endfor %}</li>
-    {% endfor %}
-</ul>
-<form action="{% url 'core:createEntry' event.id %}" method="post">
-    {% csrf_token %}
-    <fieldset>
-        <legend><h1>Create Entry for {{ event.title }}</h1></legend>
-        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-        {% for entry in event.entry_set.all %}
-            {% for diveInstance in entry.diveinstance_set.all %}
-                <input type="checkbox" name="diveInstance" id="diveInstance{{ forloop.counter }}" value="{{ diveInstance.id }}">
-                <label for="diveInstance{{ forloop.counter }}">{{ entry.diver }}: {{ diveInstance.dive.number }}, {{ diveInstance.dive.height }}M</label><br>
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    
+    <title>Fantasy Diving</title>
+</head>
+
+<body>
+    <div class="mx-3 my-2">
+        <h2>{{ event.meet.title }}</h2>
+        <h3>{{ event.title }}</h3>
+        <ul>
+            {% for entry in event.entry_set.all %}
+                <li>
+                    {{ entry.diver }}: 
+                    {% for diveInstance in entry.diveinstance_set.all %} 
+                        {{ diveInstance.dive.number }}, {{ diveInstance.dive.height }}M 
+                    {% endfor %}
+                </li>
             {% endfor %}
-        {% endfor %}
-    </fieldset>
-    <input type="submit" value="CreateEntry">
-</form>
+        </ul>
+        <form action="{% url 'core:createEntry' event.id %}" method="post">
+            {% csrf_token %}
+            <fieldset>
+                <legend><h3>Create Entry for {{ event.title }}</h3></legend>
+                {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+                {% for entry in event.entry_set.all %}
+                <div class="row">
+                    <div class="col">
+                        <strong>{{ entry.diver }}</strong>
+                    </div>
+                    {% for diveInstance in entry.diveinstance_set.all %}
+                        <div class="col px-1">
+                            <input type="checkbox" name="diveInstance" id="diveInstance{{ forloop.counter }}" value="{{ diveInstance.id }}">
+                            <label for="diveInstance{{ forloop.counter }}">{{ diveInstance.dive.number }}, {{ diveInstance.dive.height }}M</label>
+                        </div>
+                    {% endfor %}
+                </div>
+                <br>
+                {% endfor %}
+            
+            </fieldset>
+            <div class="mx-auto" style="width: 150px;">
+                <input class="btn btn-primary" type="submit" value="Create Entry" style="width: 150px;">
+            </div>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+</body>
+</html>
