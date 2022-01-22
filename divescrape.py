@@ -110,19 +110,32 @@ class Event:
         found = False
 
         results = []
-
         content = soup.find(id="dm_content").find("table").find_all("tr")
         for row in content:
             td = row.find("td")
+            title = td.text
             link = td.find("a")
             try:
-                if link.text == self.title:
-                    URL = "https://secure.meetcontrol.com/divemeets/system/" + link['href']
-                    found = True
+                if self.title.split(" ")[0] == "Prelim/Quarterfinal" or self.title.split(" ")[0] == "Final":
+                    prefix = title.split(" ")[-1].replace("(", "").replace(")", " ")
+                    title = prefix + title
+                    pieces = title.split(" ")[:-1]
+                    separator = " "
+                    title = separator.join(pieces)
+                    if title == self.title:
+                        URL = "https://secure.meetcontrol.com/divemeets/system/" + link['href']
+                        found = True
+                else:
+                    if link.text == self.title:
+                        URL = "https://secure.meetcontrol.com/divemeets/system/" + link['href']
+                        found = True
             except AttributeError:
                 pass
         
         if not found:
+            # check if `prelim/quarterfinal` or `final` is in event name
+            print(self.title)
+
             return
 
         # continue if link to event results was found
@@ -248,8 +261,8 @@ def main():
 
     
     
-    meet = getMeets()[3]
-    event = meet.getEvents()[4]
+    meet = getMeets()[21]
+    event = meet.getEvents()[0]
     results = event.getResults()
     for result in results:
         print(result.diver)

@@ -9,7 +9,19 @@
 </head>
 
 <body>
-    <div class="mx-3 my-2">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="overflow: hidden; top: 0%; width: 100%;  position: fixed;">
+        <a class="navbar-brand" href="{% url 'core:overview' %}">
+            <div class="mx-3" style="font-size: 30px;">
+                Fantasy Diving
+            </div>
+        </a>
+        <div class="ms-auto">
+            <a class="navbar-brand ms-auto" href="#">Sign Up</a>
+            <a class="navbar-brand ms-auto" href="#">Log In</a>
+        </div>
+    </nav>
+
+    <div class="mx-3 mb-2" style="margin-top: 80px;">
         <h2>{{ meet.title }}</h2>
         <h3>Events</h3>
         <ul>

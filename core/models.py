@@ -51,6 +51,7 @@ class DiveInstance(models.Model):
 
 class FantasyEntry(models.Model):
     # TODO: add user
+    #user = models.User()
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     dives = models.ManyToManyField(DiveInstance)
     totalScore = models.FloatField(default=0)

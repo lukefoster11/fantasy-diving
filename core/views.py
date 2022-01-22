@@ -62,6 +62,8 @@ def entries(request, event_id):
     dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate)
     dsevent = divescrape.Event(event.title, event.entriesPath, event.date, dsmeet)
 
+    no_entries = False
+
     update_results = False
     
     if not event.hasResults:
@@ -92,8 +94,11 @@ def entries(request, event_id):
                     print("entry already exists")
             
             # TODO: check for divers removed from event
+
+            if len(dsentries) == 0:
+                no_entries = True
             
-            return render(request, 'core/entries.html', {'event': event})
+            return render(request, 'core/entries.html', {'event': event, 'no_entries': no_entries})
     
         else:
             results = dsevent.getResults()
@@ -132,18 +137,21 @@ def entries(request, event_id):
                             match = True
                     if not match:
                         dbdive.delete()
+
+                event.hasResults = True
+                event.save()
             
-            fantasyEntries = FantasyEntry.objects.filter(event=event)
-            for fantasyEntry in fantasyEntries:
-                if fantasyEntry.totalScore == 0:
-                    for dive in fantasyEntry.dives.all():
-                        fantasyEntry.totalScore += dive.score
-                fantasyEntry.save()
-            
-            event.hasResults = True
-            event.save()
+    fantasyEntries = FantasyEntry.objects.filter(event=event)
+    for fantasyEntry in fantasyEntries:
+        if fantasyEntry.totalScore == 0:
+            for dive in fantasyEntry.dives.all():
+                fantasyEntry.totalScore += dive.score
+        fantasyEntry.save()
+    
+    if len(fantasyEntries) == 0:
+        no_entries = True
         
-    return render(request, 'core/results.html', {'event': event})
+    return render(request, 'core/results.html', {'event': event, 'no_entries': no_entries})
 
 
 def createEntry(request, event_id):

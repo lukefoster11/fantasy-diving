@@ -9,29 +9,46 @@
 </head>
 
 <body>
-    <div class="mx-3 my-2">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="overflow: hidden; top: 0%; width: 100%;  position: fixed;">
+        <a class="navbar-brand" href="{% url 'core:overview' %}">
+            <div class="mx-3" style="font-size: 30px;">
+                Fantasy Diving
+            </div>
+        </a>
+        <div class="ms-auto">
+            <a class="navbar-brand ms-auto" href="#">Sign Up</a>
+            <a class="navbar-brand ms-auto" href="#">Log In</a>
+        </div>
+    </nav>
+
+    <div class="mx-3 mb-2" style="margin-top: 80px;">
         <h2>{{ event.meet.title }}</h2>
-        <h3>{{ event.title }} Results</h3>
-        <ul>
-            {% for entry in event.entry_set.all %}
-                <li>
-                    <div class="row">
-                        <div class="col">
-                            {{ entry.diver }}:
+        <div class="border border-primary px-2 py-2 rounded">
+            <h3>{{ event.title }} Results</h3>
+            <ul>
+                {% for entry in event.entry_set.all %}
+                    <li>
+                        <div class="row">
+                            <div class="col">
+                                {{ entry.diver }}:
+                            </div>
+                            {% for diveInstance in entry.diveinstance_set.all %} 
+                            <div class="col">
+                                {{ diveInstance.dive.number }}: {{ diveInstance.score|floatformat:2 }} 
+                            </div>
+                            {% endfor %}
+                            <div class="col">
+                                <strong>Total: {{ entry.totalScore|floatformat:2 }}</strong>
+                            </div>
                         </div>
-                        {% for diveInstance in entry.diveinstance_set.all %} 
-                        <div class="col">
-                            {{ diveInstance.dive.number }}: {{ diveInstance.score|floatformat:2 }} 
-                        </div>
-                        {% endfor %}
-                        <div class="col">
-                            <strong>Total: {{ entry.totalScore|floatformat:2 }}</strong>
-                        </div>
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-        <h3>Fantasy Entries</h3>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <h3 style="text-align: center; padding-top: 5px;">Fantasy Entries</h3>
+        {% if no_entries %}
+        <h4 style="text-align: center;">No fantasy entries submitted...</h4>
+        {% endif %}
         <ul>
             {% for fantasyEntry in event.fantasyentry_set.all %}
                 <li>
