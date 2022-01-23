@@ -11,8 +11,11 @@
                 {% csrf_token %}
                 <fieldset>
                     {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+                    <div class="row px-4 pb-3">
+                        <input type="text" name="username" id="username" placeholder="Enter your name" style="width: 25%;">
+                    </div>
                     {% for entry in event.entry_set.all %}
-                        <div class="row">
+                        <div class="row px-3">
                             <div class="col">
                                 <strong>{{ entry.diver }}</strong>
                             </div>
@@ -31,6 +34,22 @@
                 </div>
             </form>
         </div>
+
+        {% if event.fantasyentry_set.all|length > 0 %}
+            <h3 class="py-3"style="text-align: center;">Fantasy Entries Submitted</h3>
+            {% for fantasyEntry in event.fantasyentry_set.all %}
+                <div class="row">
+                    <div class="col">
+                        <strong>{{ fantasyEntry.name }}</strong>
+                    </div>
+                    {% for dive in fantasyEntry.dives.all %}
+                    <div class="col">
+                        {{ dive.entry.diver }}: {{dive.dive.number }}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        {% endif %}
     {% endif %}
     {% if event.entry_set.all|length == 0 %}
         <h4 style="text-align: center;">No entries yet... check back later</h4>

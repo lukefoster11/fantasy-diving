@@ -33,9 +33,7 @@
     <ul>
         {% for fantasyEntry in event.fantasyentry_set.all %}
             <li>
-                {% for dive in fantasyEntry.dives.all %}
-                    {{ dive.entry.diver }}: {{ dive.dive.number }}: {{ dive.score|floatformat:2 }}
-                {% endfor %}
+                {{ fantasyEntry.name }} --
                 <strong>Total: {{ fantasyEntry.totalScore|floatformat:2 }}</strong>
             </li>
         {% endfor %}

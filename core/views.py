@@ -148,10 +148,20 @@ def entries(request, event_id):
 
 def createEntry(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
+    entry_name = request.POST.get('username')
     selected_dives = request.POST.getlist('diveInstance')
-    # TODO: check if user already has FantasyEntry
-    # TODO: check if choices align with competition rules (6 dives, etc.)
-    fantasyEntry = FantasyEntry(event=event)
+    
+    if entry_name == "":
+        # TODO: create message
+        return render(request, 'core/entries.html', {'event': event})
+    if len(selected_dives) != 6:
+        # TODO: create message
+        return render(request, 'core/entries.html', {'event': event})
+    if FantasyEntry.objects.get(name=entry_name):
+        # TODO: create message
+        return render(request, 'core/entries.html', {'event': event})
+
+    fantasyEntry = FantasyEntry(name=entry_name, event=event)
     fantasyEntry.save()
     for dive in selected_dives:
         diveInstance = DiveInstance.objects.get(pk=dive)
@@ -159,12 +169,3 @@ def createEntry(request, event_id):
 
     # TODO: HttpResponseRedirect?
     return redirect('core:overview')
-
-def register(request):
-    return render(request, 'core/register.html')
-
-def registerUser(request):
-    username = request.POST.get('pwd')
-    print(username)
-
-    return redirect('core:register')

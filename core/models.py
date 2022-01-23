@@ -51,11 +51,10 @@ class DiveInstance(models.Model):
         return self.entry.event.meet.title + ": " + self.entry.event.title + ": " + self.entry.diver + ": " + self.dive.number
 
 class FantasyEntry(models.Model):
-    # TODO: add user
-    user = User()
+    name = models.CharField(max_length=50)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     dives = models.ManyToManyField(DiveInstance)
     totalScore = models.FloatField(default=0)
 
     def __str__(self):
-        return "Fantasy Entry: " + self.event.meet.title + ": " + self.event.title
+        return self.name + "'s Fantasy Entry: " + self.event.meet.title + ": " + self.event.title
