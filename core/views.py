@@ -62,8 +62,6 @@ def entries(request, event_id):
     dsmeet = divescrape.Meet(meet.meetid, meet.title, meet.startDate, meet.endDate)
     dsevent = divescrape.Event(event.title, event.entriesPath, event.date, dsmeet)
 
-    no_entries = False
-
     update_results = False
     
     if not event.hasResults:
@@ -94,11 +92,8 @@ def entries(request, event_id):
                     print("entry already exists")
             
             # TODO: check for divers removed from event
-
-            if len(dsentries) == 0:
-                no_entries = True
             
-            return render(request, 'core/entries.html', {'event': event, 'no_entries': no_entries})
+            return render(request, 'core/entries.html', {'event': event})
     
         else:
             results = dsevent.getResults()
@@ -147,11 +142,8 @@ def entries(request, event_id):
             for dive in fantasyEntry.dives.all():
                 fantasyEntry.totalScore += dive.score
         fantasyEntry.save()
-    
-    if len(fantasyEntries) == 0:
-        no_entries = True
         
-    return render(request, 'core/results.html', {'event': event, 'no_entries': no_entries})
+    return render(request, 'core/results.html', {'event': event})
 
 
 def createEntry(request, event_id):
@@ -167,3 +159,12 @@ def createEntry(request, event_id):
 
     # TODO: HttpResponseRedirect?
     return redirect('core:overview')
+
+def register(request):
+    return render(request, 'core/register.html')
+
+def registerUser(request):
+    username = request.POST.get('pwd')
+    print(username)
+
+    return redirect('core:register')

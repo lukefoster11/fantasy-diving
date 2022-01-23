@@ -2,6 +2,7 @@ from platform import mac_ver
 from django.db import models
 from django.db.models.query_utils import PathInfo
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.auth.models import User
 from datetime import date
 
 # Create your models here.
@@ -51,7 +52,7 @@ class DiveInstance(models.Model):
 
 class FantasyEntry(models.Model):
     # TODO: add user
-    #user = models.User()
+    user = User()
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     dives = models.ManyToManyField(DiveInstance)
     totalScore = models.FloatField(default=0)
